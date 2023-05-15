@@ -2,57 +2,66 @@ package com.example.bulleaniveau;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.view.OrientationEventListener;
+import android.view.View;
 import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
-    OrientationEventListener orientationEventListener;
+    // initialisation des variable
+    private SensorManager sensorManager;
+    private Sensor gravitySensor;
+    private TextView orientationTextView;
+    private View lineView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        orientationEventListener = new OrientationEventListener(this) {
-            @Override
-            public void onOrientationChanged(int orientation) {
-                updateOrientation(orientation);
-            }
-        };
+        // récupère le textView
+        orientationTextView = findViewById(R.id.orientationTextView);
 
-        if (orientationEventListener.canDetectOrientation()) {
-            orientationEventListener.enable();
-        }
+        // récupère le sensor en mode gravity
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
     }
 
-    private void updateOrientation(int orientation) {
-        int x = 0;
-        int y = 0;
-
-        if (orientation >= 45 && orientation < 135) {
-            // Orientation : Portrait (à plat)
-            x = 0;
-            y = 1;
-        } else if (orientation >= 135 && orientation < 225) {
-            // Orientation : Paysage inversé (écran large, à plat)
-            x = 1;
-            y = 0;
-        } else if (orientation >= 225 && orientation < 315) {
-            // Orientation : Portrait inversé (à plat)
-            x = 0;
-            y = -1;
-        } else {
-            // Orientation : Paysage (écran large, debout)
-            x = -1;
-            y = 0;
-        }
-
-        String orientationText = "x" + x + ":y" + y;
-        TextView orientationTextView = findViewById(R.id.orientationTextView);
-        orientationTextView.setText(orientationText);
+    /**
+     * regarde les changements du capteur
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        sensorManager.registerListener(this, gravitySensor, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        sensorManager.unregisterListener(this);
+    }
 
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+
+        // Mise à jour des valeurs de x et y
+        int xValue = (int) (event.values[0] * 10);
+        int yValue = (int) (event.values[1] * 10);
+        int zValue = (int) (event.values[2] * 10);
+
+        // Mise à jour de l'affichage dans le TextView
+        orientationTextView.setText("x : " + xValue + "%\ny : " + yValue + "%\nz : " + zValue + "%");
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Ne fait rien pour le moment
+    }
 }
